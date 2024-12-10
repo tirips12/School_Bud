@@ -1,0 +1,37 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Remove {{ content_type|title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4>Remove {{ content_type|title }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <h5>You are about to remove this {{ content_type }}:</h5>
+                    {% if content_type == 'question' %}
+                        <p><strong>Title:</strong> {{ content.title }}</p>
+                    {% endif %}
+                    <p><strong>Content:</strong> {{ content.content }}</p>
+                    <p><strong>Author:</strong> {{ content.author.username }}</p>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Removal Reason:</label>
+                        <textarea name="reason" id="reason" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% if content_type == 'question' %}{% url 'question_detail' content.pk %}{% else %}{% url 'question_detail' content.question.pk %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-danger">Remove {{ content_type|title }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

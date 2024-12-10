@@ -1,0 +1,113 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ question.title }}{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-body">
+        {% if question.removed %}
+            <div class="alert alert-danger">
+                <h5>This question has been removed by a moderator</h5>
+                <p><strong>Reason:</strong> {{ question.removal_reason }}</p>
+                <p><small>Removed by {{ question.removed_by.username }} on {{ question.removed_at|date:"M d, Y" }}</small></p>
+                {% if user.is_staff %}
+                    <a href="{% url 'restore_question' question.pk %}" class="btn btn-success btn-sm">Restore Question</a>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        <div class="d-flex">
+            <div class="votes vote-container" data-type="question" data-id="{{ question.id }}">
+                <button class="btn btn-link vote-button" data-vote="up">
+                    <i class="fas fa-caret-up fa-2x"></i>
+                </button>
+                <div class="vote-count">{{ question.votes }}</div>
+                <button class="btn btn-link vote-button" data-vote="down">
+                    <i class="fas fa-caret-down fa-2x"></i>
+                </button>
+            </div>
+            <div class="flex-grow-1">
+                <h2 class="card-title">{{ question.title }}</h2>
+                <p class="card-text">{{ question.content }}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        Asked by <a href="{% url 'profile' question.author.username %}">{{ question.author.username }}</a>
+                        on {{ question.created_at|date:"M d, Y" }}
+                    </small>
+                </div>
+            </div>
+            {% if user.is_staff and not question.removed %}
+                <div class="ms-auto">
+                    <a href="{% url 'remove_question' question.pk %}" class="btn btn-danger btn-sm">
+                        <i class="fas fa-trash"></i> Remove
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if question.answers.all %}
+    <h3>{{ question.answers.count }} Answer{{ question.answers.count|pluralize }}</h3>
+
+    {% for answer in question.answers.all %}
+    <div class="card mb-3">
+        <div class="card-body">
+            {% if answer.removed %}
+                <div class="alert alert-danger">
+                    <p>This answer has been removed by a moderator</p>
+                    <p><strong>Reason:</strong> {{ answer.removal_reason }}</p>
+                    <p><small>Removed by {{ answer.removed_by.username }} on {{ answer.removed_at|date:"M d, Y" }}</small></p>
+                    {% if user.is_staff %}
+                        <a href="{% url 'restore_answer' answer.pk %}" class="btn btn-success btn-sm">Restore Answer</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+            
+            <div class="d-flex">
+                <div class="votes vote-container" data-type="answer" data-id="{{ answer.id }}">
+                    <button class="btn btn-link vote-button" data-vote="up">
+                        <i class="fas fa-caret-up fa-2x"></i>
+                    </button>
+                    <div class="vote-count">{{ answer.votes }}</div>
+                    <button class="btn btn-link vote-button" data-vote="down">
+                        <i class="fas fa-caret-down fa-2x"></i>
+                    </button>
+                </div>
+                <div class="flex-grow-1">
+                    <p class="card-text">{{ answer.content }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            Answered by <a href="{% url 'profile' answer.author.username %}">{{ answer.author.username }}</a>
+                            on {{ answer.created_at|date:"M d, Y" }}
+                        </small>
+                    </div>
+                </div>
+                {% if user.is_staff and not answer.removed %}
+                    <div class="ms-auto">
+                        <a href="{% url 'remove_answer' answer.pk %}" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash"></i> Remove
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+
+{% if user.is_authenticated %}
+<div class="card mt-4">
+    <div class="card-body">
+        <h4>Your Answer</h4>
+        <form method="post" action="{% url 'answer_question' question.pk %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <textarea class="form-control" name="content" rows="5" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Post Answer</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

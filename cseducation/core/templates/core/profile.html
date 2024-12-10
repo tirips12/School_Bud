@@ -1,0 +1,99 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ profile.user.username }}'s Profile{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h4 class="card-title">{{ profile.user.username }}</h4>
+                <p class="text-muted">
+                    <i class="fas fa-trophy"></i> Reputation: <span class="user-reputation">{{ profile.reputation }}</span>
+                </p>
+                {% if profile.github_username %}
+                <p>
+                    <i class="fab fa-github"></i>
+                    <a href="https://github.com/{{ profile.github_username }}" target="_blank">
+                        {{ profile.github_username }}
+                    </a>
+                </p>
+                {% endif %}
+                {% if profile.bio %}
+                <p class="card-text">{{ profile.bio }}</p>
+                {% endif %}
+                <p class="text-muted">
+                    <i class="fas fa-calendar"></i> Member since {{ profile.created_at|date:"M d, Y" }}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="mb-4">
+            <h4>GitHub Repositories</h4>
+            {% if github_repos %}
+                {% for repo in github_repos %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h5 class="card-title">
+                                <a href="{{ repo.url }}" target="_blank">{{ repo.name }}</a>
+                            </h5>
+                            {% if repo.language %}
+                            <span class="badge bg-primary">{{ repo.language }}</span>
+                            {% endif %}
+                        </div>
+                        {% if repo.description %}
+                        <p class="card-text">{{ repo.description }}</p>
+                        {% endif %}
+                        
+                        {% if repo.readme %}
+                        <div class="collapse" id="readme-{{ forloop.counter }}">
+                            <div class="card card-body bg-light">
+                                <pre class="mb-0"><code>{{ repo.readme }}</code></pre>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary mt-2" 
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#readme-{{ forloop.counter }}">
+                            Toggle README
+                        </button>
+                        {% endif %}
+                        
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-star"></i> {{ repo.stars }}
+                                • Updated {{ repo.updated_at|date:"M d, Y" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                {% if profile.github_username %}
+                <p class="text-muted">No public repositories found.</p>
+                {% else %}
+                <p class="text-muted">No GitHub account linked.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+        <h4>Questions</h4>
+        {% for question in questions %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <a href="{% url 'question_detail' question.pk %}">{{ question.title }}</a>
+                </h5>
+                <p class="card-text text-truncate">{{ question.content }}</p>
+                <small class="text-muted">
+                    Posted on {{ question.created_at|date:"M d, Y" }}
+                    • {{ question.votes }} votes
+                </small>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">No questions asked yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
