@@ -26,7 +26,10 @@ SECRET_KEY = "django-insecure-a2mi40e@pc%enn^$v07z*ha5sbm&v7+v^-*sj_gn=f4j$!w1%$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '127.0.0.1:60203']
+
+# CSRF Trusted Origins
+CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:60203', 'http://localhost:8000']
 
 
 # Application definition
@@ -132,9 +135,15 @@ AUTHENTICATION_BACKENDS = (
 )
 
 # Add these settings for GitHub OAuth
+# NOTE: The GitHub OAuth application is configured with callback URL:
+# http://127.0.0.1:8000/social-auth/complete/github/
+# So make sure to access the site via 127.0.0.1 instead of localhost
 SOCIAL_AUTH_GITHUB_KEY = 'Ov23liF4zsdhkncAEQxY'
 SOCIAL_AUTH_GITHUB_SECRET = 'd0f2348811d0d3c4bd072a0e52c392c234ba48bd'
 SOCIAL_AUTH_GITHUB_SCOPE = ['user']
+
+# Force the callback URL to use 127.0.0.1 instead of localhost
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
