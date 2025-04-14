@@ -1,6 +1,12 @@
 document.addEventListener('DOMContentLoaded', function() {
     const voteButtons = document.querySelectorAll('.vote-button');
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    // Get CSRF token from our hidden form
+    const csrfTokenElement = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfTokenElement) {
+        console.error('CSRF token not found');
+        return;
+    }
+    const csrfToken = csrfTokenElement.value;
 
     voteButtons.forEach(button => {
         button.addEventListener('click', function(e) {
