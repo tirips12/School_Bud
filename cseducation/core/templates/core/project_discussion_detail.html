@@ -1,0 +1,48 @@
+{% extends 'core/base.html' %}
+{% block title %}Project Discussion: {{ discussion.group_name }}{% endblock %}
+{% block content %}
+<h1>{{ discussion.group_name }}</h1>
+<p><strong>Course:</strong> <a href="{% url 'course_detail' discussion.course.id %}">{{ discussion.course.name }}</a></p>
+<p><strong>Started by:</strong> {{ discussion.created_by.username }} on {{ discussion.created_at|date:"M d, Y H:i" }}</p>
+<div class="mb-3">
+    <h4>Projects</h4>
+    <ul>
+    {% for project in discussion.projects %}
+        {% if project.name and project.url %}
+            <li><a href="{{ project.url }}" target="_blank">{{ project.name }}</a>{% if project.summary %}: {{ project.summary }}{% endif %}</li>
+        {% elif project.name %}
+            <li>{{ project.name }}</li>
+        {% else %}
+            <li>{{ project }}</li>
+        {% endif %}
+    {% empty %}
+        <li>No projects listed.</li>
+    {% endfor %}
+    </ul>
+</div>
+<div class="mb-4">
+    <h4>Comments</h4>
+    {% for comment in discussion.comments.all %}
+        <div class="card mb-2">
+            <div class="card-body">
+                <p class="card-text">{{ comment.content }}</p>
+                <small class="text-muted">By {{ comment.author.username }} on {{ comment.created_at|date:"M d, Y H:i" }}</small>
+            </div>
+        </div>
+    {% empty %}
+        <p>No comments yet.</p>
+    {% endfor %}
+</div>
+{% if user.is_authenticated %}
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="commentContent" class="form-label">Add a comment:</label>
+        <textarea class="form-control" id="commentContent" name="content" rows="2"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Post Comment</button>
+</form>
+{% else %}
+<p><a href="{% url 'login' %}">Log in</a> to comment.</p>
+{% endif %}
+{% endblock %}

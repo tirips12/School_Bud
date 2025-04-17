@@ -14,8 +14,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from github import Github
 
-from .forms import QuestionForm, RegistrationForm
-from .models import Answer, Profile, Question, Vote
+from .forms import QuestionForm, RegistrationForm, ProjectDiscussionForm
+from .models import Answer, Profile, Question, Vote, Course, ProjectDiscussion, ProjectComment
 
 
 def home(request):
@@ -117,17 +117,76 @@ def question_detail(request, pk):
     return render(request, 'core/question_detail.html', {'question': question})
 
 @login_required
-def question_new(request):
+def question_new(request, course_id=None):
+    course = None
+    if course_id:
+        course = get_object_or_404(Course, pk=course_id)
     if request.method == "POST":
         form = QuestionForm(request.POST)
         if form.is_valid():
             question = form.save(commit=False)
             question.author = request.user
+            if course:
+                question.course = course
             question.save()
             return redirect('question_detail', pk=question.pk)
     else:
-        form = QuestionForm()
-    return render(request, 'core/question_form.html', {'form': form})
+        form = QuestionForm(initial={'course': course} if course else None)
+    return render(request, 'core/question_form.html', {'form': form, 'course': course})
+
+
+def course_list(request):
+    courses = Course.objects.all()
+    return render(request, 'core/course_list.html', {'courses': courses})
+
+
+def course_detail(request, pk):
+    course = get_object_or_404(Course, pk=pk)
+    questions = course.questions.filter(removed=False).order_by('-created_at')
+    project_discussions = course.project_discussions.order_by('-created_at')
+    return render(request, 'core/course_detail.html', {
+        'course': course,
+        'questions': questions,
+        'project_discussions': project_discussions
+    })
+
+
+@login_required
+def project_discussion_new(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
+    if request.method == "POST":
+        form = ProjectDiscussionForm(request.POST, course=course)
+        if form.is_valid():
+            discussion = form.save(commit=False)
+            discussion.created_by = request.user
+            discussion.course = course
+            # Ensure each project is stored as a dict with at least 'name'
+            raw_projects = form.cleaned_data['projects']
+            projects_list = []
+            for p in raw_projects:
+                if isinstance(p, dict):
+                    projects_list.append(p)
+                else:
+                    projects_list.append({'name': p})
+            discussion.projects = projects_list
+            discussion.save()
+            return redirect('project_discussion_detail', pk=discussion.pk)
+    else:
+        form = ProjectDiscussionForm(course=course)
+    return render(request, 'core/project_discussion_form.html', {'form': form, 'course': course})
+
+
+def project_discussion_detail(request, pk):
+    discussion = get_object_or_404(ProjectDiscussion, pk=pk)
+    if request.method == "POST" and request.user.is_authenticated:
+        content = request.POST.get('content')
+        if content:
+            ProjectComment.objects.create(
+                discussion=discussion,
+                author=request.user,
+                content=content
+            )
+    return render(request, 'core/project_discussion_detail.html', {'discussion': discussion})
 
 def logout_view(request):
     logout(request)

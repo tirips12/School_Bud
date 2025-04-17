@@ -1,0 +1,50 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ course.code }} - {{ course.name }}{% endblock %}
+{% block content %}
+<h1>{{ course.code }} - {{ course.name }}</h1>
+<p>{{ course.description }}</p>
+<p><strong>Lecturer:</strong> {{ course.lecturer.username }}</p>
+
+<ul class="nav nav-tabs mb-3" id="courseTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="questions-tab" data-bs-toggle="tab" data-bs-target="#questions" type="button" role="tab">Questions</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">Project Discussions</button>
+  </li>
+</ul>
+<div class="tab-content" id="courseTabContent">
+  <div class="tab-pane fade show active" id="questions" role="tabpanel">
+    <div class="mb-3 text-end">
+      <a href="{% url 'question_new_course' course.id %}" class="btn btn-primary">Ask Question</a>
+    </div>
+    {% for question in questions %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title"><a href="{% url 'question_detail' question.pk %}">{{ question.title }}</a></h5>
+          <p class="card-text">{{ question.content|truncatechars:150 }}</p>
+          <small class="text-muted">Asked by {{ question.author.username }} on {{ question.created_at|date:"M d, Y" }}</small>
+        </div>
+      </div>
+    {% empty %}
+      <p>No questions for this course yet.</p>
+    {% endfor %}
+  </div>
+  <div class="tab-pane fade" id="projects" role="tabpanel">
+    <div class="mb-3 text-end">
+      <a href="{% url 'project_discussion_new' course.id %}" class="btn btn-secondary">New Project Discussion</a>
+    </div>
+    {% for discussion in project_discussions %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title"><a href="{% url 'project_discussion_detail' discussion.pk %}">{{ discussion.group_name }}</a></h5>
+          <p class="card-text">{{ discussion.projects|length }} projects</p>
+          <small class="text-muted">Started by {{ discussion.created_by.username }} on {{ discussion.created_at|date:"M d, Y" }}</small>
+        </div>
+      </div>
+    {% empty %}
+      <p>No project discussions for this course yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

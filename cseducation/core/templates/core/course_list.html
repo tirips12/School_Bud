@@ -1,0 +1,20 @@
+{% extends 'core/base.html' %}
+{% block title %}Courses - CS Education Platform{% endblock %}
+{% block content %}
+<h1>Courses</h1>
+<div class="row">
+    {% for course in courses %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><a href="{% url 'course_detail' course.pk %}">{{ course.code }} - {{ course.name }}</a></h5>
+                <p class="card-text">{{ course.description }}</p>
+                <p class="card-text"><strong>Lecturer:</strong> {{ course.lecturer.username }}</p>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <p>No courses available.</p>
+    {% endfor %}
+</div>
+{% endblock %}
