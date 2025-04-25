@@ -1,5 +1,5 @@
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/School_Bud.git
+git clone https://github.com/tirips12/School_Bud.git
 
 # Create and activate virtual environment
 python -m venv venv
