@@ -104,6 +104,8 @@ For production or to use GitHub integration, you'll need to set up the following
 ## Admin Access
 
 Access the admin interface at http://127.0.0.1:8000/admin/ using the superuser credentials created earlier.
+- username: admin
+- password: admin123
 
 ## License
 
