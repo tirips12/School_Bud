@@ -1,0 +1,238 @@
+{% extends 'core/base.html' %}
+{% block title %}GitHub Projects Showcase - School Bud{% endblock %}
+{% block content %}
+<!-- Header Section -->
+<div class="row mb-4">
+  <div class="col-md-12">
+    <div class="d-flex justify-content-between align-items-center">
+      <h1><i class="fab fa-github me-3"></i>GitHub Projects Showcase</h1>
+      {% if user.is_authenticated and user.is_staff %}
+      <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+        <i class="fas fa-plus me-2"></i>Add Project
+      </a>
+      {% endif %}
+    </div>
+    <p class="lead text-muted">Discover and explore GitHub projects relevant to computer science education.</p>
+  </div>
+</div>
+
+<!-- Search Form -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <form method="get" role="search">
+      <div class="row g-3 align-items-center">
+        <div class="col-md-6">
+          <div class="input-group">
+            <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control" name="q" placeholder="Search by repo, owner, or description..." value="{{ query }}" aria-label="Search">
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="input-group">
+            <span class="input-group-text bg-light"><i class="fas fa-code"></i></span>
+            <select class="form-select" name="language" aria-label="Filter by language">
+              <option value="" {% if not selected_language %}selected{% endif %}>All Languages</option>
+              {% for lang in languages %}
+                <option value="{{ lang }}" {% if lang == selected_language %}selected{% endif %}>{{ lang }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100" type="submit">
+            <i class="fas fa-filter me-2"></i>Filter
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- Projects Grid -->
+<div class="row">
+  {% for repo in repos %}
+  <div class="col-md-6 mb-4">
+    <div class="card h-100 repo-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <img src="{{ repo.owner_avatar_url }}" alt="{{ repo.owner }}" class="rounded-circle me-2" width="40" height="40">
+          <a href="https://github.com/{{ repo.owner }}" target="_blank" class="text-decoration-none">
+            <strong>{{ repo.owner }}</strong>
+          </a>
+        </div>
+        <span class="repo-language badge bg-light text-dark">
+          {% if repo.language == 'JavaScript' %}
+            <i class="fab fa-js text-warning me-1"></i>
+          {% elif repo.language == 'Python' %}
+            <i class="fab fa-python text-primary me-1"></i>
+          {% elif repo.language == 'Java' %}
+            <i class="fab fa-java text-danger me-1"></i>
+          {% elif repo.language == 'HTML' or repo.language == 'CSS' %}
+            <i class="fab fa-html5 text-danger me-1"></i>
+          {% elif repo.language == 'C#' %}
+            <i class="fas fa-code text-success me-1"></i>
+          {% else %}
+            <i class="fas fa-code text-secondary me-1"></i>
+          {% endif %}
+          {{ repo.language|default:"Unknown" }}
+        </span>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title mb-3">
+          <a href="{% url 'github_project_detail' repo.pk %}" class="text-decoration-none">{{ repo.name }}</a>
+        </h5>
+        <p class="card-text text-muted">{{ repo.description|default:'No description available.'|truncatechars:150 }}</p>
+        <div class="d-flex align-items-center mt-3">
+          <span class="me-3" data-bs-toggle="tooltip" title="Stars">
+            <i class="fas fa-star text-warning"></i> {{ repo.stargazers_count }}
+          </span>
+          <span class="me-3" data-bs-toggle="tooltip" title="Votes">
+            <i class="fas fa-thumbs-up text-primary"></i> {{ repo.votes }}
+          </span>
+          <span data-bs-toggle="tooltip" title="Created on">
+            <i class="far fa-calendar-alt text-secondary"></i> {{ repo.created_at|date:"M d, Y" }}
+          </span>
+        </div>
+      </div>
+      <div class="card-footer d-flex justify-content-between align-items-center">
+        <a href="{{ repo.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+          <i class="fab fa-github me-1"></i> View on GitHub
+        </a>
+        <a href="{% url 'github_project_detail' repo.pk %}" class="btn btn-sm btn-primary">
+          <i class="fas fa-info-circle me-1"></i> Details & Comments
+        </a>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12">
+    <div class="alert alert-info">
+      <i class="fas fa-info-circle me-2"></i> No showcased repos found. Try adjusting your search criteria.
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div class="pagination-container mt-5 mb-4">
+  <nav aria-label="GitHub Projects pagination" class="pagination-nav">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="pagination-info">
+        <p class="text-muted mb-0">
+          Showing <span class="fw-bold">{{ page_obj.start_index }}</span> to <span class="fw-bold">{{ page_obj.end_index }}</span> of <span class="fw-bold">{{ page_obj.paginator.count }}</span> projects
+        </p>
+      </div>
+      
+      <ul class="pagination pagination-modern">
+        <!-- First page button -->
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}{% if selected_language %}&language={{ selected_language }}{% endif %}&page=1" aria-label="First page" data-bs-toggle="tooltip" title="First page">
+              <i class="fas fa-angle-double-left"></i>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link" aria-label="First page"><i class="fas fa-angle-double-left"></i></span>
+          </li>
+        {% endif %}
+        
+        <!-- Previous button -->
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}{% if selected_language %}&language={{ selected_language }}{% endif %}&page={{ page_obj.previous_page_number }}" aria-label="Previous" data-bs-toggle="tooltip" title="Previous page">
+              <i class="fas fa-angle-left"></i>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link" aria-label="Previous"><i class="fas fa-angle-left"></i></span>
+          </li>
+        {% endif %}
+        
+        <!-- Page numbers -->
+        {% if page_obj.number > 3 %}
+          <li class="page-item"><a class="page-link" href="?q={{ query }}{% if selected_language %}&language={{ selected_language }}{% endif %}&page=1">1</a></li>
+          {% if page_obj.number > 4 %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+          {% endif %}
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+          {% if num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+            {% if page_obj.number == num %}
+              <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% else %}
+              <li class="page-item"><a class="page-link" href="?q={{ query }}{% if selected_language %}&language={{ selected_language }}{% endif %}&page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.number < page_obj.paginator.num_pages|add:'-2' %}
+          {% if page_obj.number < page_obj.paginator.num_pages|add:'-3' %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+          {% endif %}
+          <li class="page-item"><a class="page-link" href="?q={{ query }}{% if selected_language %}&language={{ selected_language }}{% endif %}&page={{ page_obj.paginator.num_pages }}">{{ page_obj.paginator.num_pages }}</a></li>
+        {% endif %}
+        
+        <!-- Next button -->
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}{% if selected_language %}&language={{ selected_language }}{% endif %}&page={{ page_obj.next_page_number }}" aria-label="Next" data-bs-toggle="tooltip" title="Next page">
+              <i class="fas fa-angle-right"></i>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link" aria-label="Next"><i class="fas fa-angle-right"></i></span>
+          </li>
+        {% endif %}
+        
+        <!-- Last page button -->
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}{% if selected_language %}&language={{ selected_language }}{% endif %}&page={{ page_obj.paginator.num_pages }}" aria-label="Last page" data-bs-toggle="tooltip" title="Last page">
+              <i class="fas fa-angle-double-right"></i>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link" aria-label="Last page"><i class="fas fa-angle-double-right"></i></span>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  </nav>
+</div>
+{% endif %}
+
+<!-- Add Project Modal (for staff) -->
+{% if user.is_authenticated and user.is_staff %}
+<div class="modal fade" id="addProjectModal" tabindex="-1" aria-labelledby="addProjectModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addProjectModalLabel"><i class="fab fa-github me-2"></i>Add GitHub Project</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addProjectForm" method="post" action="{% url 'github_projects_list' %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="repo_url" class="form-label">GitHub Repository URL</label>
+            <input type="url" class="form-control" id="repo_url" name="repo_url" placeholder="https://github.com/username/repo" required>
+            <div class="form-text">Enter the full URL to the GitHub repository you want to add.</div>
+          </div>
+          <div class="d-grid">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-plus me-2"></i>Add Project
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

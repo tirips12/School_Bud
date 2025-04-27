@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Profile, ProjectDiscussion, ProjectComment, EventLog, Question, Answer, Vote, Course, Assignment, AssignmentSubmission
+from .models import Profile, ProjectDiscussion, ProjectComment, EventLog, Question, Answer, Vote, Course, Assignment, AssignmentSubmission, GitHubShowcasedRepo, GitHubRepoComment
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
@@ -58,6 +58,17 @@ class AssignmentAdmin(admin.ModelAdmin):
     search_fields = ('title', 'course__name', 'course__code')
     list_filter = ('course',)
     inlines = [AssignmentSubmissionInline]
+
+@admin.register(GitHubShowcasedRepo)
+class GitHubShowcasedRepoAdmin(admin.ModelAdmin):
+    list_display = ('owner', 'name', 'stargazers_count', 'language', 'votes', 'created_at', 'updated_at')
+    search_fields = ('owner', 'name', 'description')
+    list_filter = ('language',)
+
+@admin.register(GitHubRepoComment)
+class GitHubRepoCommentAdmin(admin.ModelAdmin):
+    list_display = ('repo', 'author', 'created_at')
+    search_fields = ('repo__name', 'author__username', 'content')
 
 @admin.register(AssignmentSubmission)
 class AssignmentSubmissionAdmin(admin.ModelAdmin):

@@ -1,33 +1,86 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Login - CS Education Platform{% endblock %}
+{% block title %}Login - School Bud{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">Login</h4>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-7">
+            <div class="text-center mb-4">
+                <h1 class="display-5 fw-bold text-primary mb-2">Welcome Back</h1>
+                <p class="text-muted">Sign in to continue to School Bud</p>
             </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    {% for field in form %}
-                    <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                        {{ field.errors }}
-                        {{ field }}
+            
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4 p-md-5">
+                    {% if messages %}
+                    <div class="mb-4">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                    <button type="submit" class="btn btn-primary">Login</button>
-                    <a href="{% url 'social:begin' 'github' %}" class="btn btn-dark">
-                        <i class="fab fa-github"></i> Login with GitHub
-                    </a>
-                </form>
-                <hr>
-                <p class="mb-0">Don't have an account? <a href="{% url 'register' %}">Register here</a></p>
+                    {% endif %}
+                    
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="form-floating mb-3">
+                            {{ field }}
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ field.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="d-grid gap-2 mb-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                            </button>
+                            <a href="{% url 'social:begin' 'github' %}" class="btn btn-dark btn-lg">
+                                <i class="fab fa-github me-2"></i>Continue with GitHub
+                            </a>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center">
+                        <p class="mb-0">Don't have an account? <a href="{% url 'register' %}" class="text-decoration-none fw-bold">Register here</a></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <p class="text-muted small">
+                    <i class="fas fa-lock me-1"></i> Secure login protected by industry-standard encryption
+                </p>
             </div>
         </div>
     </div>
 </div>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Bootstrap validation styles to Django form fields
+    const formFields = document.querySelectorAll('.form-floating input');
+    formFields.forEach(field => {
+        field.classList.add('form-control');
+        if (field.required) {
+            field.setAttribute('required', 'required');
+        }
+        
+        // Add validation classes based on Django validation
+        if (field.closest('.form-floating').querySelector('.invalid-feedback')) {
+            field.classList.add('is-invalid');
+        }
+    });
+});
+</script>
+{% endblock %}
 {% endblock %}

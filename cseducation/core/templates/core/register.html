@@ -1,57 +1,117 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Register - CS Education Platform{% endblock %}
+{% block title %}Register - School Bud{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">Register</h4>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="text-center mb-4">
+                <h1 class="display-5 fw-bold text-primary mb-2">Join School Bud</h1>
+                <p class="text-muted">Create an account to get started with our CS education platform</p>
             </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
+            
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4 p-md-5">
                     {% if form.non_field_errors %}
-                    <div class="alert alert-danger">
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
                         {% for error in form.non_field_errors %}
                             {{ error }}
                         {% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     {% endif %}
                     
-                    {% for field in form %}
-                    <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                        {{ field }}
-                        {% if field.errors %}
-                        <div class="text-danger">
-                            {% for error in field.errors %}
-                                {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                        {% if field.help_text %}
-                        <small class="form-text text-muted">{{ field.help_text }}</small>
-                        {% endif %}
+                    <div class="mb-4">
+                        <a href="{% url 'social:begin' 'github' %}" class="btn btn-dark btn-lg w-100">
+                            <i class="fab fa-github me-2"></i>Register with GitHub
+                        </a>
                     </div>
-                    {% endfor %}
                     
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Register</button>
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="flex-grow-1 border-bottom"></div>
+                        <div class="mx-3 text-muted">or register with email</div>
+                        <div class="flex-grow-1 border-bottom"></div>
                     </div>
-                </form>
-                <hr>
-                <div class="text-center">
-                    <p class="mb-0">Already have an account? <a href="{% url 'login' %}">Login here</a></p>
-                    <p class="mt-2">Or</p>
-                    <a href="{% url 'social:begin' 'github' %}" class="btn btn-dark">
-                        <i class="fab fa-github"></i> Register with GitHub
-                    </a>
+                    
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        {% for field in form %}
+                        <div class="form-floating mb-3">
+                            {{ field }}
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in field.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {% if field.help_text %}
+                            <small class="form-text text-muted">{{ field.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" value="" id="termsCheck" required>
+                            <label class="form-check-label" for="termsCheck">
+                                I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a>
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid mb-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center">
+                        <p class="mb-0">Already have an account? <a href="{% url 'login' %}" class="text-decoration-none fw-bold">Sign in</a></p>
+                    </div>
                 </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <p class="text-muted small">
+                    <i class="fas fa-shield-alt me-1"></i> Your data is protected and we will never share it with third parties
+                </p>
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Bootstrap validation styles to Django form fields
+    const formFields = document.querySelectorAll('.form-floating input');
+    formFields.forEach(field => {
+        field.classList.add('form-control');
+        if (field.required) {
+            field.setAttribute('required', 'required');
+        }
+        
+        // Add validation classes based on Django validation
+        if (field.closest('.form-floating').querySelector('.invalid-feedback')) {
+            field.classList.add('is-invalid');
+        }
+    });
+    
+    // Form validation
+    const form = document.querySelector('form.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        form.classList.add('was-validated');
+    }, false);
+});
+</script>
+{% endblock %}
+{% endblock %}

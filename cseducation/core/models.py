@@ -101,6 +101,7 @@ class Vote(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     question = models.ForeignKey(Question, on_delete=models.CASCADE, null=True, blank=True)
     answer = models.ForeignKey(Answer, on_delete=models.CASCADE, null=True, blank=True)
+    github_repo = models.ForeignKey('GitHubShowcasedRepo', on_delete=models.CASCADE, null=True, blank=True)
     vote_type = models.CharField(max_length=4, choices=VOTE_TYPES)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -170,3 +171,31 @@ class AssignmentSubmission(models.Model):
 
     def __str__(self):
         return f"{self.assignment.title} - {self.student.username}"
+
+# --- GitHub Projects Showcase ---
+class GitHubShowcasedRepo(models.Model):
+    owner = models.CharField(max_length=100)
+    owner_avatar_url = models.URLField(blank=True)
+    name = models.CharField(max_length=200)
+    url = models.URLField()
+    description = models.TextField(blank=True)
+    readme = models.TextField(blank=True)
+    stargazers_count = models.IntegerField(default=0)
+    language = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
+    votes = models.IntegerField(default=0)
+    # Optionally: cache JSON metadata
+    metadata = models.JSONField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.owner}/{self.name}"
+
+class GitHubRepoComment(models.Model):
+    repo = models.ForeignKey(GitHubShowcasedRepo, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.author.username} on {self.repo.owner}/{self.repo.name}"

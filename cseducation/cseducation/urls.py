@@ -34,5 +34,6 @@ urlpatterns = [
     path('question/<int:pk>/restore/', views.restore_question, name='restore_question'),
     path('answer/<int:pk>/remove/', views.remove_answer, name='remove_answer'),
     path('answer/<int:pk>/restore/', views.restore_answer, name='restore_answer'),
+    path('api/', include('core.api_urls')),
     path('', include('core.urls')),
 ]

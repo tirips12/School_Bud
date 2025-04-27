@@ -1,20 +1,107 @@
 {% extends 'core/base.html' %}
-{% block title %}Courses - CS Education Platform{% endblock %}
+{% block title %}Courses - School Bud{% endblock %}
 {% block content %}
-<h1>Courses</h1>
-<div class="row">
+<!-- Navigation breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none"><i class="fas fa-home me-1"></i> Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Courses</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0"><i class="fas fa-graduation-cap text-primary me-2"></i>Courses</h1>
+    <div class="d-flex">
+        <div class="input-group">
+            <input type="text" class="form-control" placeholder="Search courses..." id="courseSearch">
+            <button class="btn btn-outline-primary" type="button">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row" id="courseList">
     {% for course in courses %}
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title"><a href="{% url 'course_detail' course.pk %}">{{ course.code }} - {{ course.name }}</a></h5>
-                <p class="card-text">{{ course.description }}</p>
-                <p class="card-text"><strong>Lecturer:</strong> {{ course.lecturer.username }}</p>
+    <div class="col-lg-4 col-md-6 mb-4 course-card">
+        <div class="card shadow-sm h-100 border-0 hover-card">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <span class="badge bg-primary">{{ course.code }}</span>
+                {% if user.is_staff %}
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-link text-dark" type="button" id="courseActions{{ course.pk }}" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="courseActions{{ course.pk }}">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-edit me-2"></i> Edit</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-trash-alt me-2"></i> Delete</a></li>
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title mb-3">
+                    <a href="{% url 'course_detail' course.pk %}" class="text-decoration-none stretched-link">{{ course.name }}</a>
+                </h5>
+                <p class="card-text text-muted flex-grow-1">{{ course.description|truncatechars:120 }}</p>
+                <div class="mt-3">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-container bg-light text-primary me-2">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span>{{ course.lecturer.username }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-light text-dark me-2">
+                            <i class="fas fa-users text-primary me-1"></i> {{ course.enrolled_students.count|default:0 }} Students
+                        </span>
+                    </div>
+                    <small class="text-muted">
+                        <i class="far fa-calendar-alt me-1"></i> {{ course.created_at|date:"M d, Y" }}
+                    </small>
+                </div>
             </div>
         </div>
     </div>
     {% empty %}
-    <p>No courses available.</p>
+    <div class="col-12 text-center py-5">
+        <i class="fas fa-graduation-cap fa-4x text-muted mb-3"></i>
+        <h4>No courses available</h4>
+        <p class="text-muted mb-4">There are no courses available at the moment.</p>
+    </div>
     {% endfor %}
 </div>
+
+
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Course search functionality
+    const searchInput = document.getElementById('courseSearch');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            const searchTerm = this.value.toLowerCase();
+            const courseCards = document.querySelectorAll('.course-card');
+            
+            courseCards.forEach(card => {
+                const title = card.querySelector('.card-title').textContent.toLowerCase();
+                const description = card.querySelector('.card-text').textContent.toLowerCase();
+                const code = card.querySelector('.badge').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || description.includes(searchTerm) || code.includes(searchTerm)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
 {% endblock %}

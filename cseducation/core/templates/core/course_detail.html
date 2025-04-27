@@ -1,50 +1,285 @@
 {% extends 'core/base.html' %}
-{% block title %}{{ course.code }} - {{ course.name }}{% endblock %}
+{% block title %}{{ course.code }} - {{ course.name }} - School Bud{% endblock %}
 {% block content %}
-<h1>{{ course.code }} - {{ course.name }}</h1>
-<p>{{ course.description }}</p>
-<p><strong>Lecturer:</strong> {{ course.lecturer.username }}</p>
+<!-- Navigation breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none"><i class="fas fa-home me-1"></i> Home</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'course_list' %}" class="text-decoration-none">Courses</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ course.code }}</li>
+  </ol>
+</nav>
 
-<ul class="nav nav-tabs mb-3" id="courseTabs" role="tablist">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active" id="questions-tab" data-bs-toggle="tab" data-bs-target="#questions" type="button" role="tab">Questions</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">Project Discussions</button>
-  </li>
-</ul>
-<div class="tab-content" id="courseTabContent">
-  <div class="tab-pane fade show active" id="questions" role="tabpanel">
-    <div class="mb-3 text-end">
-      <a href="{% url 'question_new_course' course.id %}" class="btn btn-primary">Ask Question</a>
+<!-- Course Header -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="mb-0">
+        <span class="badge bg-primary me-2">{{ course.code }}</span>
+        {{ course.name }}
+      </h1>
     </div>
-    {% for question in questions %}
-      <div class="card mb-3">
-        <div class="card-body">
-          <h5 class="card-title"><a href="{% url 'question_detail' question.pk %}">{{ question.title }}</a></h5>
-          <p class="card-text">{{ question.content|truncatechars:150 }}</p>
-          <small class="text-muted">Asked by {{ question.author.username }} on {{ question.created_at|date:"M d, Y" }}</small>
+    
+    <div class="row">
+      <div class="col-md-8">
+        <p class="lead mb-4">{{ course.description }}</p>
+        
+        <div class="d-flex mb-3">
+          <div class="me-4">
+            <div class="d-flex align-items-center">
+              <div class="icon-container bg-light text-primary me-2">
+                <i class="fas fa-user"></i>
+              </div>
+              <div>
+                <small class="text-muted d-block">Lecturer</small>
+                <span>{{ course.lecturer.username }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="me-4">
+            <div class="d-flex align-items-center">
+              <div class="icon-container bg-light text-primary me-2">
+                <i class="fas fa-users"></i>
+              </div>
+              <div>
+                <small class="text-muted d-block">Students</small>
+                <span>{{ course.enrolled_students.count|default:0 }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="d-flex align-items-center">
+              <div class="icon-container bg-light text-primary me-2">
+                <i class="fas fa-calendar-alt"></i>
+              </div>
+              <div>
+                <small class="text-muted d-block">Created</small>
+                <span>{{ course.created_at|date:"M d, Y" }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    {% empty %}
-      <p>No questions for this course yet.</p>
-    {% endfor %}
-  </div>
-  <div class="tab-pane fade" id="projects" role="tabpanel">
-    <div class="mb-3 text-end">
-      <a href="{% url 'project_discussion_new' course.id %}" class="btn btn-secondary">New Project Discussion</a>
-    </div>
-    {% for discussion in project_discussions %}
-      <div class="card mb-3">
-        <div class="card-body">
-          <h5 class="card-title"><a href="{% url 'project_discussion_detail' discussion.pk %}">{{ discussion.group_name }}</a></h5>
-          <p class="card-text">{{ discussion.projects|length }} projects</p>
-          <small class="text-muted">Started by {{ discussion.created_by.username }} on {{ discussion.created_at|date:"M d, Y" }}</small>
+      
+      <div class="col-md-4">
+        <div class="card bg-light border-0">
+          <div class="card-body">
+            <h5 class="card-title"><i class="fas fa-chart-bar text-primary me-2"></i>Course Stats</h5>
+            <div class="row text-center mt-3">
+              <div class="col-4">
+                <div class="analytics-value">{{ questions|length }}</div>
+                <div class="analytics-label">Questions</div>
+              </div>
+              <div class="col-4">
+                <div class="analytics-value">{{ project_discussions|length }}</div>
+                <div class="analytics-label">Projects</div>
+              </div>
+              <div class="col-4">
+                <div class="analytics-value">{{ course.enrolled_students.count|default:0 }}</div>
+                <div class="analytics-label">Students</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    {% empty %}
-      <p>No project discussions for this course yet.</p>
-    {% endfor %}
+    </div>
   </div>
 </div>
+
+<!-- Course Content Tabs -->
+<ul class="nav nav-tabs mb-4" id="courseTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="questions-tab" data-bs-toggle="tab" data-bs-target="#questions" type="button" role="tab">
+      <i class="fas fa-question-circle me-2"></i>Questions
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">
+      <i class="fas fa-project-diagram me-2"></i>Project Discussions
+    </button>
+  </li>
+
+</ul>
+<div class="tab-content" id="courseTabContent">
+  <!-- Questions Tab -->
+  <div class="tab-pane fade show active" id="questions" role="tabpanel">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4><i class="fas fa-question-circle text-primary me-2"></i>Course Questions</h4>
+      <a href="{% url 'question_new_course' course.id %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> Ask Question
+      </a>
+    </div>
+    
+    <div class="row" id="questionsList">
+      {% for question in questions %}
+      <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100 hover-card">
+          <div class="card-body">
+            <div class="d-flex align-items-start mb-3">
+              <div class="votes-count text-center me-3">
+                <div class="fs-4 fw-bold text-primary">{{ question.votes }}</div>
+                <small class="text-muted">votes</small>
+              </div>
+              <div>
+                <h5 class="card-title mb-1">
+                  <a href="{% url 'question_detail' question.pk %}" class="text-decoration-none stretched-link">{{ question.title }}</a>
+                </h5>
+                <div class="d-flex align-items-center">
+                  <small class="text-muted me-2">
+                    <i class="fas fa-comment-dots me-1"></i> {{ question.answers.count }} answers
+                  </small>
+                  <small class="text-muted">
+                    <i class="fas fa-eye me-1"></i> {{ question.views|default:0 }} views
+                  </small>
+                </div>
+              </div>
+            </div>
+            <p class="card-text text-muted">{{ question.content|truncatechars:120 }}</p>
+          </div>
+          <div class="card-footer bg-white">
+            <div class="d-flex align-items-center">
+              <div class="small me-auto">
+                <span class="fw-bold">{{ question.author.username }}</span>
+                <span class="text-muted">asked {{ question.created_at|date:"M d, Y" }}</span>
+              </div>
+              {% if question.tags.all %}
+              <div>
+                {% for tag in question.tags.all %}
+                <span class="badge bg-light text-dark">{{ tag.name }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12 text-center py-5">
+        <i class="fas fa-question-circle fa-4x text-muted mb-3"></i>
+        <h5>No questions for this course yet</h5>
+        <p class="text-muted mb-4">Be the first to ask a question about this course!</p>
+        <a href="{% url 'question_new_course' course.id %}" class="btn btn-primary">
+          <i class="fas fa-plus me-1"></i> Ask a Question
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  
+  <!-- Project Discussions Tab -->
+  <div class="tab-pane fade" id="projects" role="tabpanel">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4><i class="fas fa-project-diagram text-primary me-2"></i>Project Discussions</h4>
+      <a href="{% url 'project_discussion_new' course.id %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> New Project Discussion
+      </a>
+    </div>
+    
+    <div class="row" id="projectsList">
+      {% for discussion in project_discussions %}
+      <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100 hover-card">
+          <div class="card-header bg-light">
+            <h5 class="card-title mb-0">
+              <a href="{% url 'project_discussion_detail' discussion.pk %}" class="text-decoration-none stretched-link">{{ discussion.group_name }}</a>
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-3">
+              <span class="badge bg-primary">
+                <i class="fas fa-code-branch me-1"></i> {{ discussion.projects|length }} projects
+              </span>
+              <span class="badge bg-light text-dark">
+                <i class="fas fa-users me-1"></i> {{ discussion.members.count|default:0 }} members
+              </span>
+            </div>
+            
+            {% if discussion.description %}
+            <p class="card-text text-muted">{{ discussion.description|truncatechars:120 }}</p>
+            {% else %}
+            <p class="card-text text-muted fst-italic">No description available</p>
+            {% endif %}
+          </div>
+          <div class="card-footer bg-white">
+            <div class="d-flex align-items-center">
+              <div class="small">
+                <span class="fw-bold">{{ discussion.created_by.username }}</span>
+                <span class="text-muted">started {{ discussion.created_at|date:"M d, Y" }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12 text-center py-5">
+        <i class="fas fa-project-diagram fa-4x text-muted mb-3"></i>
+        <h5>No project discussions for this course yet</h5>
+        <p class="text-muted mb-4">Start a new project discussion to collaborate with others!</p>
+        <a href="{% url 'project_discussion_new' course.id %}" class="btn btn-primary">
+          <i class="fas fa-plus me-1"></i> New Project Discussion
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  
+
+</div>
+
+
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Handle tab persistence with URL hash
+  var hash = window.location.hash;
+  if (hash) {
+    const triggerEl = document.querySelector(`button[data-bs-target="${hash}"]`);
+    if (triggerEl) {
+      new bootstrap.Tab(triggerEl).show();
+    }
+  }
+  
+  // Update URL hash when tab changes
+  const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+  tabEls.forEach(tabEl => {
+    tabEl.addEventListener('shown.bs.tab', function (event) {
+      const target = event.target.getAttribute('data-bs-target');
+      history.replaceState(null, null, target);
+    });
+  });
+  
+  // Save resource button (for demonstration)
+  const saveResourceBtn = document.getElementById('saveResourceBtn');
+  if (saveResourceBtn) {
+    saveResourceBtn.addEventListener('click', function() {
+      // In a real app, this would submit the form data via AJAX
+      this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+      this.disabled = true;
+      
+      // Simulate saving
+      setTimeout(() => {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addResourceModal'));
+        modal.hide();
+        
+        // Show success message
+        const alertHtml = `
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i> Resource added successfully!
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        `;
+        document.querySelector('#resources').insertAdjacentHTML('afterbegin', alertHtml);
+        
+        // Reset button
+        this.innerHTML = '<i class="fas fa-save me-1"></i> Save Resource';
+        this.disabled = false;
+      }, 1000);
+    });
+  }
+});
+</script>
+{% endblock %}
 {% endblock %}

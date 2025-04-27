@@ -1,99 +1,287 @@
 {% extends 'core/base.html' %}
 
-{% block title %}{{ profile.user.username }}'s Profile{% endblock %}
+{% block title %}{{ profile.user.username }}'s Profile - School Bud{% endblock %}
 
 {% block content %}
+<!-- Navigation breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none"><i class="fas fa-home me-1"></i> Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Profile</li>
+    </ol>
+</nav>
+
 <div class="row">
-    <div class="col-md-4">
-        <div class="card mb-4">
-            <div class="card-body">
-                <h4 class="card-title">{{ profile.user.username }}</h4>
-                <p class="text-muted">
-                    <i class="fas fa-trophy"></i> Reputation: <span class="user-reputation">{{ profile.reputation }}</span>
-                </p>
-                {% if profile.github_username %}
-                <p>
-                    <i class="fab fa-github"></i>
-                    <a href="https://github.com/{{ profile.github_username }}" target="_blank">
-                        {{ profile.github_username }}
-                    </a>
-                </p>
-                {% endif %}
+    <div class="col-lg-4">
+        <!-- Profile Card -->
+        <div class="card profile-header shadow-sm mb-4">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <div class="profile-avatar mx-auto mb-3">
+                        <i class="fas fa-user-circle fa-5x text-primary"></i>
+                    </div>
+                    <h3 class="mb-1">{{ profile.user.username }}</h3>
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <span class="badge bg-primary me-2">
+                            <i class="fas fa-trophy me-1"></i> {{ profile.reputation }} Reputation
+                        </span>
+                        {% if profile.user.is_staff %}
+                        <span class="badge bg-danger">
+                            <i class="fas fa-shield-alt me-1"></i> Staff
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
                 {% if profile.bio %}
-                <p class="card-text">{{ profile.bio }}</p>
+                <div class="mb-3 p-3 bg-light rounded">
+                    <p class="card-text mb-0">{{ profile.bio }}</p>
+                </div>
                 {% endif %}
-                <p class="text-muted">
-                    <i class="fas fa-calendar"></i> Member since {{ profile.created_at|date:"M d, Y" }}
-                </p>
+                
+                <div class="profile-details text-start">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="icon-container me-3 text-primary">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div>
+                            <div class="small text-muted">Member since</div>
+                            <div>{{ profile.created_at|date:"F d, Y" }}</div>
+                        </div>
+                    </div>
+                    
+                    {% if profile.github_username %}
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="icon-container me-3 text-primary">
+                            <i class="fab fa-github"></i>
+                        </div>
+                        <div>
+                            <div class="small text-muted">GitHub</div>
+                            <div>
+                                <a href="https://github.com/{{ profile.github_username }}" target="_blank" class="text-decoration-none">
+                                    {{ profile.github_username }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex align-items-center">
+                        <div class="icon-container me-3 text-primary">
+                            <i class="fas fa-question-circle"></i>
+                        </div>
+                        <div>
+                            <div class="small text-muted">Questions</div>
+                            <div>{{ questions|length }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Activity Stats Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>Activity Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="analytics-value">{{ profile.reputation }}</div>
+                        <div class="analytics-label">Reputation</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="analytics-value">{{ questions|length }}</div>
+                        <div class="analytics-label">Questions</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="analytics-value">{{ github_repos|length }}</div>
+                        <div class="analytics-label">Repos</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-8">
-        <div class="mb-4">
-            <h4>GitHub Repositories</h4>
-            {% if github_repos %}
-                {% for repo in github_repos %}
-                <div class="card mb-3">
+    <div class="col-lg-8">
+        <!-- Tabs for different sections -->
+        <ul class="nav nav-tabs mb-4" id="profileTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="questions-tab" data-bs-toggle="tab" data-bs-target="#questions" type="button" role="tab" aria-controls="questions" aria-selected="true">
+                    <i class="fas fa-question-circle me-2"></i>Questions
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="repositories-tab" data-bs-toggle="tab" data-bs-target="#repositories" type="button" role="tab" aria-controls="repositories" aria-selected="false">
+                    <i class="fab fa-github me-2"></i>GitHub Repositories
+                </button>
+            </li>
+        </ul>
+        
+        <!-- Tab content -->
+        <div class="tab-content" id="profileTabsContent">
+            <!-- Questions Tab -->
+            <div class="tab-pane fade show active" id="questions" role="tabpanel" aria-labelledby="questions-tab">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4><i class="fas fa-question-circle text-primary me-2"></i>Questions</h4>
+                    <div>
+                        <span class="badge bg-primary">{{ questions|length }} total</span>
+                    </div>
+                </div>
+                
+                {% for question in questions %}
+                <div class="card shadow-sm mb-3 question-card">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <h5 class="card-title">
-                                <a href="{{ repo.url }}" target="_blank">{{ repo.name }}</a>
-                            </h5>
-                            {% if repo.language %}
-                            <span class="badge bg-primary">{{ repo.language }}</span>
-                            {% endif %}
-                        </div>
-                        {% if repo.description %}
-                        <p class="card-text">{{ repo.description }}</p>
-                        {% endif %}
-                        
-                        {% if repo.readme %}
-                        <div class="collapse" id="readme-{{ forloop.counter }}">
-                            <div class="card card-body bg-light">
-                                <pre class="mb-0"><code>{{ repo.readme }}</code></pre>
+                        <h5 class="card-title mb-2">
+                            <a href="{% url 'question_detail' question.pk %}" class="text-decoration-none">{{ question.title }}</a>
+                        </h5>
+                        <p class="card-text text-muted mb-3">{{ question.content|truncatechars:150 }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-light text-dark me-2">
+                                    <i class="fas fa-thumbs-up text-primary me-1"></i> {{ question.votes }} votes
+                                </span>
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-comments text-primary me-1"></i> {{ question.answers.count }} answers
+                                </span>
                             </div>
-                        </div>
-                        <button class="btn btn-sm btn-outline-primary mt-2" 
-                                data-bs-toggle="collapse" 
-                                data-bs-target="#readme-{{ forloop.counter }}">
-                            Toggle README
-                        </button>
-                        {% endif %}
-                        
-                        <div class="mt-2">
                             <small class="text-muted">
-                                <i class="fas fa-star"></i> {{ repo.stars }}
-                                • Updated {{ repo.updated_at|date:"M d, Y" }}
+                                <i class="far fa-calendar-alt me-1"></i> {{ question.created_at|date:"M d, Y" }}
                             </small>
                         </div>
                     </div>
                 </div>
+                {% empty %}
+                <div class="text-center py-5">
+                    <i class="fas fa-question-circle fa-4x text-muted mb-3"></i>
+                    <h5>No questions asked yet</h5>
+                    <p class="text-muted mb-3">{{ profile.user.username }} hasn't asked any questions yet.</p>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'question_new' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Ask a Question
+                    </a>
+                    {% endif %}
+                </div>
                 {% endfor %}
-            {% else %}
-                {% if profile.github_username %}
-                <p class="text-muted">No public repositories found.</p>
+            </div>
+            
+            <!-- GitHub Repositories Tab -->
+            <div class="tab-pane fade" id="repositories" role="tabpanel" aria-labelledby="repositories-tab">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4><i class="fab fa-github text-primary me-2"></i>GitHub Repositories</h4>
+                    <div>
+                        <span class="badge bg-primary">{{ github_repos|length }} total</span>
+                    </div>
+                </div>
+                
+                {% if github_repos %}
+                    <div class="row">
+                    {% for repo in github_repos %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card shadow-sm h-100 repo-card">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <a href="{{ repo.url }}" target="_blank" class="text-decoration-none">{{ repo.name }}</a>
+                                </h5>
+                                {% if repo.language %}
+                                <span class="repo-language badge bg-light text-dark">
+                                    {% if repo.language == 'JavaScript' %}
+                                    <i class="fab fa-js text-warning me-1"></i>
+                                    {% elif repo.language == 'Python' %}
+                                    <i class="fab fa-python text-primary me-1"></i>
+                                    {% elif repo.language == 'Java' %}
+                                    <i class="fab fa-java text-danger me-1"></i>
+                                    {% elif repo.language == 'HTML' or repo.language == 'CSS' %}
+                                    <i class="fab fa-html5 text-danger me-1"></i>
+                                    {% elif repo.language == 'C#' %}
+                                    <i class="fas fa-code text-success me-1"></i>
+                                    {% else %}
+                                    <i class="fas fa-code text-secondary me-1"></i>
+                                    {% endif %}
+                                    {{ repo.language }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                {% if repo.description %}
+                                <p class="card-text text-muted">{{ repo.description }}</p>
+                                {% else %}
+                                <p class="card-text text-muted fst-italic">No description available</p>
+                                {% endif %}
+                                
+                                <div class="d-flex align-items-center mt-3">
+                                    <span class="me-3" data-bs-toggle="tooltip" data-bs-title="Stars">
+                                        <i class="fas fa-star text-warning"></i> {{ repo.stars }}
+                                    </span>
+                                    <span data-bs-toggle="tooltip" data-bs-title="Last updated">
+                                        <i class="far fa-calendar-alt text-secondary"></i> {{ repo.updated_at|date:"M d, Y" }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            {% if repo.readme %}
+                            <div class="card-footer">
+                                <button class="btn btn-sm btn-outline-primary w-100" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#readme-{{ forloop.counter }}"
+                                        aria-expanded="false"
+                                        aria-controls="readme-{{ forloop.counter }}">
+                                    <i class="fas fa-book me-1"></i> Toggle README
+                                </button>
+                                <div class="collapse mt-3" id="readme-{{ forloop.counter }}">
+                                    <div class="bg-light rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                                        <pre class="mb-0"><code>{{ repo.readme }}</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    </div>
                 {% else %}
-                <p class="text-muted">No GitHub account linked.</p>
+                    <div class="text-center py-5">
+                        <i class="fab fa-github fa-4x text-muted mb-3"></i>
+                        {% if profile.github_username %}
+                        <h5>No public repositories found</h5>
+                        <p class="text-muted">{{ profile.user.username }} doesn't have any public repositories or they couldn't be retrieved.</p>
+                        {% else %}
+                        <h5>No GitHub account linked</h5>
+                        <p class="text-muted">{{ profile.user.username }} hasn't linked their GitHub account yet.</p>
+                        {% endif %}
+                    </div>
                 {% endif %}
-            {% endif %}
-        </div>
-        <h4>Questions</h4>
-        {% for question in questions %}
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <a href="{% url 'question_detail' question.pk %}">{{ question.title }}</a>
-                </h5>
-                <p class="card-text text-truncate">{{ question.content }}</p>
-                <small class="text-muted">
-                    Posted on {{ question.created_at|date:"M d, Y" }}
-                    • {{ question.votes }} votes
-                </small>
             </div>
         </div>
-        {% empty %}
-        <p class="text-muted">No questions asked yet.</p>
-        {% endfor %}
     </div>
 </div>
+
+{% block scripts %}
+<script>
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+    
+    // Handle tab persistence with URL hash
+    var hash = window.location.hash;
+    if (hash) {
+        const triggerEl = document.querySelector(`button[data-bs-target="${hash}"]`);
+        if (triggerEl) {
+            new bootstrap.Tab(triggerEl).show();
+        }
+    }
+    
+    // Update URL hash when tab changes
+    const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+    tabEls.forEach(tabEl => {
+        tabEl.addEventListener('shown.bs.tab', function (event) {
+            const target = event.target.getAttribute('data-bs-target');
+            history.replaceState(null, null, target);
+        });
+    });
+});
+</script>
+{% endblock %}
 {% endblock %}

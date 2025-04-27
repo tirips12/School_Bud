@@ -14,8 +14,28 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from github import Github
 
+import markdown
+from django.utils.safestring import mark_safe
+
+def render_markdown_to_html(md_text):
+    return mark_safe(markdown.markdown(
+        md_text or '',
+        extensions=['fenced_code', 'codehilite', 'tables', 'toc']
+    ))
+
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth import login, logout
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.models import User
+from django.http import HttpResponseForbidden, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+from github import Github
 from .forms import QuestionForm, RegistrationForm, ProjectDiscussionForm
-from .models import Answer, Profile, Question, Vote, Course, ProjectDiscussion, ProjectComment
+from .models import Answer, Profile, Question, Vote, Course, ProjectDiscussion, ProjectComment, EventLog, GitHubShowcasedRepo, GitHubRepoComment
 
 
 def home(request):
@@ -105,10 +125,37 @@ def profile(request, username):
             profile.last_github_sync = datetime.now()
             profile.save()
     
+    # Get repositories from both sources
+    github_repos = []
+    
+    # 1. Add repositories from profile.github_repos if available
+    if profile.github_repos:
+        github_repos.extend(profile.github_repos)
+    
+    # 2. Add repositories from GitHubShowcasedRepo that match the user's GitHub username
+    if profile.github_username:
+        showcased_repos = GitHubShowcasedRepo.objects.filter(owner__iexact=profile.github_username)
+        
+        # Convert showcased repos to the same format as profile.github_repos
+        for repo in showcased_repos:
+            # Check if this repo is already in the list (to avoid duplicates)
+            if not any(r.get('name') == repo.name for r in github_repos):
+                repo_data = {
+                    'name': repo.name,
+                    'description': repo.description,
+                    'url': repo.url,
+                    'stars': repo.stargazers_count,
+                    'language': repo.language,
+                    'readme': repo.readme,
+                    'created_at': repo.created_at.isoformat(),
+                    'updated_at': repo.updated_at.isoformat(),
+                }
+                github_repos.append(repo_data)
+    
     return render(request, 'core/profile.html', {
         'profile': profile,
         'questions': questions,
-        'github_repos': profile.github_repos if profile.github_repos else []
+        'github_repos': github_repos
     })
 
 @login_required
@@ -187,6 +234,212 @@ def project_discussion_detail(request, pk):
                 content=content
             )
     return render(request, 'core/project_discussion_detail.html', {'discussion': discussion})
+
+from django.contrib.admin.views.decorators import staff_member_required
+
+def analytics_dashboard(request):
+    if not request.user.is_staff:
+        return redirect('home')
+    courses = Course.objects.all()
+    stats = []
+    for course in courses:
+        questions = course.questions.count()
+        answers = Answer.objects.filter(question__course=course).count()
+        discussions = course.project_discussions.count()
+        students = course.students.count()
+        stats.append({
+            'course': {
+                'id': course.id,
+                'code': course.code,
+                'name': course.name,
+            },
+            'questions': questions,
+            'answers': answers,
+            'discussions': discussions,
+            'students': students
+        })
+    # General stats
+    total_questions = Question.objects.count()
+    total_answers = Answer.objects.count()
+    total_votes = Vote.objects.count()
+    total_users = Profile.objects.count()
+    # Recent activity log
+    recent_events = EventLog.objects.order_by('-timestamp')[:20]
+    return render(request, 'core/analytics_dashboard.html', {
+        'stats': stats,
+        'total_questions': total_questions,
+        'total_answers': total_answers,
+        'total_votes': total_votes,
+        'total_users': total_users,
+        'recent_events': recent_events
+    })
+
+from django.core.paginator import Paginator
+from django.db.models import Q
+
+def github_projects_list(request):
+    query = request.GET.get('q', '').strip()
+    selected_language = request.GET.get('language', '').strip()
+    repos_qs = GitHubShowcasedRepo.objects.all()
+    # Get all languages for filter dropdown
+    languages = (GitHubShowcasedRepo.objects.exclude(language='').values_list('language', flat=True).distinct().order_by('language'))
+    if query:
+        repos_qs = repos_qs.filter(
+            Q(name__icontains=query) |
+            Q(owner__icontains=query) |
+            Q(description__icontains=query)
+        )
+    if selected_language:
+        repos_qs = repos_qs.filter(language=selected_language)
+    repos_qs = repos_qs.order_by('-stargazers_count', 'owner', 'name')
+    paginator = Paginator(repos_qs, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'core/github_projects_list.html', {
+        'repos': page_obj.object_list,
+        'page_obj': page_obj,
+        'query': query,
+        'languages': languages,
+        'selected_language': selected_language,
+    })
+
+def github_project_detail(request, pk):
+    repo = get_object_or_404(GitHubShowcasedRepo, pk=pk)
+    comments = repo.comments.order_by('-created_at')
+    can_remove = request.user.is_authenticated and (hasattr(request.user, 'profile') and request.user.profile.role == 'lecturer' or request.user.is_staff)
+    readme_html = render_markdown_to_html(repo.readme)
+    return render(request, 'core/github_project_detail.html', {
+        'repo': repo,
+        'comments': comments,
+        'can_remove': can_remove,
+        'readme_html': readme_html,
+    })
+
+
+from django.views.decorators.http import require_POST
+@login_required
+@require_POST
+def remove_github_project(request, pk):
+    repo = get_object_or_404(GitHubShowcasedRepo, pk=pk)
+    if not (hasattr(request.user, 'profile') and request.user.profile.role == 'lecturer' or request.user.is_staff):
+        return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+    repo.delete()
+    EventLog.objects.create(
+        user=request.user,
+        event_type='github_repo_remove',
+        description=f"Removed GitHub project {repo.owner}/{repo.name}",
+        metadata={'repo_id': pk, 'repo_owner': repo.owner, 'repo_name': repo.name}
+    )
+    return JsonResponse({'status': 'success'})
+
+@login_required
+@require_POST
+def remove_github_comment(request, comment_id):
+    comment = get_object_or_404(GitHubRepoComment, id=comment_id)
+    if not (hasattr(request.user, 'profile') and request.user.profile.role == 'lecturer' or request.user.is_staff):
+        return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+    repo_id = comment.repo.id
+    comment.delete()
+    EventLog.objects.create(
+        user=request.user,
+        event_type='github_comment_remove',
+        description=f"Removed comment from GitHub project {repo_id}",
+        metadata={'repo_id': repo_id, 'comment_id': comment_id}
+    )
+    return JsonResponse({'status': 'success'})
+
+@login_required
+@require_POST
+def github_repo_comment(request, pk):
+    repo = get_object_or_404(GitHubShowcasedRepo, pk=pk)
+    content = request.POST.get('content', '').strip()
+    if content:
+        GitHubRepoComment.objects.create(repo=repo, author=request.user, content=content)
+        # Log event
+        EventLog.objects.create(
+            user=request.user,
+            event_type='github_repo_comment',
+            description=f"Commented on {repo.owner}/{repo.name}: {content[:100]}",
+            metadata={
+                'repo_id': repo.id,
+                'repo_owner': repo.owner,
+                'repo_name': repo.name,
+                'comment': content[:500],
+            }
+        )
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error', 'message': 'Empty comment'}, status=400)
+
+@login_required
+@require_POST
+def github_repo_vote(request, pk):
+    repo = get_object_or_404(GitHubShowcasedRepo, pk=pk)
+    vote_type = request.POST.get('vote_type')
+    # Check if the user has already voted on this repo
+    existing_vote = Vote.objects.filter(user=request.user, question=None, answer=None, github_repo=repo).first()
+
+    if vote_type == 'up':
+        if existing_vote:
+            if existing_vote.vote_type == 'UP':
+                # User wants to retract their upvote
+                existing_vote.delete()
+                repo.votes = Vote.objects.filter(github_repo=repo, vote_type='UP').count() - Vote.objects.filter(github_repo=repo, vote_type='DOWN').count()
+                repo.save()
+                return JsonResponse({'status': 'success', 'votes': repo.votes, 'retracted': True})
+            else:
+                # Change downvote to upvote
+                existing_vote.vote_type = 'UP'
+                existing_vote.save()
+        else:
+            Vote.objects.create(user=request.user, vote_type='UP', github_repo=repo)
+        # Update vote count
+        repo.votes = Vote.objects.filter(github_repo=repo, vote_type='UP').count() - Vote.objects.filter(github_repo=repo, vote_type='DOWN').count()
+        repo.save()
+        # Log event
+        EventLog.objects.create(
+            user=request.user,
+            event_type='github_repo_vote',
+            description=f"Upvoted {repo.owner}/{repo.name}",
+            metadata={
+                'repo_id': repo.id,
+                'repo_owner': repo.owner,
+                'repo_name': repo.name,
+                'vote_type': 'up',
+            }
+        )
+        return JsonResponse({'status': 'success', 'votes': repo.votes})
+    elif vote_type == 'down':
+        if existing_vote:
+            if existing_vote.vote_type == 'DOWN':
+                # User wants to retract their downvote
+                existing_vote.delete()
+                repo.votes = Vote.objects.filter(github_repo=repo, vote_type='UP').count() - Vote.objects.filter(github_repo=repo, vote_type='DOWN').count()
+                repo.save()
+                return JsonResponse({'status': 'success', 'votes': repo.votes, 'retracted': True})
+            else:
+                # Change upvote to downvote
+                existing_vote.vote_type = 'DOWN'
+                existing_vote.save()
+        else:
+            Vote.objects.create(user=request.user, vote_type='DOWN', github_repo=repo)
+        # Update vote count
+        repo.votes = Vote.objects.filter(github_repo=repo, vote_type='UP').count() - Vote.objects.filter(github_repo=repo, vote_type='DOWN').count()
+        repo.save()
+        # Log event
+        EventLog.objects.create(
+            user=request.user,
+            event_type='github_repo_vote',
+            description=f"Downvoted {repo.owner}/{repo.name}",
+            metadata={
+                'repo_id': repo.id,
+                'repo_owner': repo.owner,
+                'repo_name': repo.name,
+                'vote_type': 'down',
+            }
+        )
+        return JsonResponse({'status': 'success', 'votes': repo.votes})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Invalid vote type'}, status=400)
 
 def logout_view(request):
     logout(request)

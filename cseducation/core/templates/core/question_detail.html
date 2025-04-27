@@ -1,113 +1,250 @@
 {% extends 'core/base.html' %}
 
-{% block title %}{{ question.title }}{% endblock %}
+{% block title %}{{ question.title }} - School Bud{% endblock %}
 
 {% block content %}
-<div class="card mb-4">
+<!-- Navigation breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none"><i class="fas fa-home me-1"></i> Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Question</li>
+    </ol>
+</nav>
+
+<!-- Question Card -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-question-circle text-primary me-2 fa-lg"></i>
+            <h5 class="mb-0">Question</h5>
+        </div>
+        <div>
+            {% if user.is_authenticated %}
+            <a href="{% url 'question_new' %}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-plus me-1"></i> Ask Question
+            </a>
+            {% endif %}
+        </div>
+    </div>
     <div class="card-body">
         {% if question.removed %}
             <div class="alert alert-danger">
-                <h5>This question has been removed by a moderator</h5>
+                <h5><i class="fas fa-exclamation-circle me-2"></i> This question has been removed by a moderator</h5>
                 <p><strong>Reason:</strong> {{ question.removal_reason }}</p>
                 <p><small>Removed by {{ question.removed_by.username }} on {{ question.removed_at|date:"M d, Y" }}</small></p>
                 {% if user.is_staff %}
-                    <a href="{% url 'restore_question' question.pk %}" class="btn btn-success btn-sm">Restore Question</a>
+                    <a href="{% url 'restore_question' question.pk %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-undo me-1"></i> Restore Question
+                    </a>
                 {% endif %}
             </div>
         {% endif %}
         
         <div class="d-flex">
             <div class="votes vote-container" data-type="question" data-id="{{ question.id }}">
-                <button class="btn btn-link vote-button" data-vote="up">
+                <button class="btn btn-link vote-button" data-vote="up" data-bs-toggle="tooltip" title="This question shows research effort; it is useful and clear">
                     <i class="fas fa-caret-up fa-2x"></i>
                 </button>
                 <div class="vote-count">{{ question.votes }}</div>
-                <button class="btn btn-link vote-button" data-vote="down">
+                <button class="btn btn-link vote-button" data-vote="down" data-bs-toggle="tooltip" title="This question does not show research effort; it is unclear or not useful">
                     <i class="fas fa-caret-down fa-2x"></i>
                 </button>
             </div>
             <div class="flex-grow-1">
-                <h2 class="card-title">{{ question.title }}</h2>
-                <p class="card-text">{{ question.content }}</p>
-                <div class="d-flex justify-content-between align-items-center">
-                    <small class="text-muted">
-                        Asked by <a href="{% url 'profile' question.author.username %}">{{ question.author.username }}</a>
-                        on {{ question.created_at|date:"M d, Y" }}
-                    </small>
+                <h2 class="question-title mb-3">{{ question.title }}</h2>
+                
+                <div class="question-markdown-body mb-4">
+                    <div id="react-question-content"></div>
+                    {{ question.content|json_script:"react-question-content-data" }}
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-user-circle fa-2x text-secondary me-2"></i>
+                        </div>
+                        <div>
+                            <div><a href="{% url 'profile' question.author.username %}" class="fw-bold text-decoration-none">{{ question.author.username }}</a></div>
+                            <small class="text-muted">
+                                <i class="far fa-clock me-1"></i> {{ question.created_at|date:"M d, Y" }}
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex">
+                        {% if user.is_authenticated %}
+                        <a href="#answer-form" class="btn btn-primary btn-sm me-2">
+                            <i class="fas fa-reply me-1"></i> Answer
+                        </a>
+                        {% endif %}
+                        
+                        {% if user.is_staff and not question.removed %}
+                        <a href="{% url 'remove_question' question.pk %}" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-trash me-1"></i> Remove
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
-            {% if user.is_staff and not question.removed %}
-                <div class="ms-auto">
-                    <a href="{% url 'remove_question' question.pk %}" class="btn btn-danger btn-sm">
-                        <i class="fas fa-trash"></i> Remove
-                    </a>
-                </div>
-            {% endif %}
         </div>
     </div>
 </div>
 
-{% if question.answers.all %}
-    <h3>{{ question.answers.count }} Answer{{ question.answers.count|pluralize }}</h3>
-
-    {% for answer in question.answers.all %}
-    <div class="card mb-3">
-        <div class="card-body">
-            {% if answer.removed %}
-                <div class="alert alert-danger">
-                    <p>This answer has been removed by a moderator</p>
-                    <p><strong>Reason:</strong> {{ answer.removal_reason }}</p>
-                    <p><small>Removed by {{ answer.removed_by.username }} on {{ answer.removed_at|date:"M d, Y" }}</small></p>
-                    {% if user.is_staff %}
-                        <a href="{% url 'restore_answer' answer.pk %}" class="btn btn-success btn-sm">Restore Answer</a>
-                    {% endif %}
-                </div>
-            {% endif %}
-            
-            <div class="d-flex">
-                <div class="votes vote-container" data-type="answer" data-id="{{ answer.id }}">
-                    <button class="btn btn-link vote-button" data-vote="up">
-                        <i class="fas fa-caret-up fa-2x"></i>
-                    </button>
-                    <div class="vote-count">{{ answer.votes }}</div>
-                    <button class="btn btn-link vote-button" data-vote="down">
-                        <i class="fas fa-caret-down fa-2x"></i>
-                    </button>
-                </div>
-                <div class="flex-grow-1">
-                    <p class="card-text">{{ answer.content }}</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">
-                            Answered by <a href="{% url 'profile' answer.author.username %}">{{ answer.author.username }}</a>
-                            on {{ answer.created_at|date:"M d, Y" }}
-                        </small>
-                    </div>
-                </div>
-                {% if user.is_staff and not answer.removed %}
-                    <div class="ms-auto">
-                        <a href="{% url 'remove_answer' answer.pk %}" class="btn btn-danger btn-sm">
-                            <i class="fas fa-trash"></i> Remove
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
+<!-- Answers Section -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-comments text-primary me-2 fa-lg"></i>
+            <h5 class="mb-0">{{ question.answers.count }} Answer{{ question.answers.count|pluralize }}</h5>
+        </div>
+        <div>
+            <span class="badge bg-primary">
+                <i class="fas fa-sort me-1"></i> Sorted by votes
+            </span>
         </div>
     </div>
-    {% endfor %}
-{% endif %}
-
-{% if user.is_authenticated %}
-<div class="card mt-4">
     <div class="card-body">
-        <h4>Your Answer</h4>
-        <form method="post" action="{% url 'answer_question' question.pk %}">
+        {% if question.answers.all %}
+            {% for answer in question.answers.all %}
+            <div class="answer-card mb-4 {% if not forloop.last %}pb-4 border-bottom{% endif %}" id="answer-{{ answer.id }}">
+                {% if answer.removed %}
+                    <div class="alert alert-danger">
+                        <p><i class="fas fa-exclamation-circle me-2"></i> This answer has been removed by a moderator</p>
+                        <p><strong>Reason:</strong> {{ answer.removal_reason }}</p>
+                        <p><small>Removed by {{ answer.removed_by.username }} on {{ answer.removed_at|date:"M d, Y" }}</small></p>
+                        {% if user.is_staff %}
+                            <a href="{% url 'restore_answer' answer.pk %}" class="btn btn-success btn-sm">
+                                <i class="fas fa-undo me-1"></i> Restore Answer
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            
+                <div class="d-flex">
+                    <div class="votes vote-container" data-type="answer" data-id="{{ answer.id }}">
+                        <button class="btn btn-link vote-button" data-vote="up" data-bs-toggle="tooltip" title="This answer is useful">
+                            <i class="fas fa-caret-up fa-2x"></i>
+                        </button>
+                        <div class="vote-count">{{ answer.votes }}</div>
+                        <button class="btn btn-link vote-button" data-vote="down" data-bs-toggle="tooltip" title="This answer is not useful">
+                            <i class="fas fa-caret-down fa-2x"></i>
+                        </button>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="answer-markdown-body mb-3">
+                            <div id="react-answer-content-{{ answer.id }}"></div>
+                            <script id="react-answer-content-data-{{ answer.id }}" type="application/json">{{ answer.content|default:"" }}</script>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="d-flex align-items-center">
+                                <div class="me-2">
+                                    <i class="fas fa-user-circle fa-lg text-secondary"></i>
+                                </div>
+                                <div>
+                                    <small>
+                                        <a href="{% url 'profile' answer.author.username %}" class="fw-bold text-decoration-none">{{ answer.author.username }}</a>
+                                        <span class="text-muted ms-2"><i class="far fa-clock me-1"></i>{{ answer.created_at|date:"M d, Y" }}</span>
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            {% if user.is_staff and not answer.removed %}
+                            <div>
+                                <a href="{% url 'remove_answer' answer.pk %}" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-trash me-1"></i> Remove
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="far fa-comment-dots fa-4x text-muted mb-3"></i>
+                <h5>No answers yet</h5>
+                <p class="text-muted">Be the first to answer this question!</p>
+                {% if user.is_authenticated %}
+                <a href="#answer-form" class="btn btn-primary">
+                    <i class="fas fa-reply me-1"></i> Post an Answer
+                </a>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-sign-in-alt me-1"></i> Login to Answer
+                </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Answer Form -->
+{% if user.is_authenticated %}
+<div class="card shadow-sm mt-4" id="answer-form">
+    <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="fas fa-reply text-primary me-2"></i>Your Answer</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" action="{% url 'answer_question' question.pk %}" id="answer-submit-form">
             {% csrf_token %}
             <div class="mb-3">
-                <textarea class="form-control" name="content" rows="5" required></textarea>
+                <textarea class="form-control" name="content" rows="6" placeholder="Share your knowledge or experience to answer this question..." required></textarea>
+                <div class="form-text">
+                    <i class="fas fa-info-circle me-1"></i> Markdown formatting is supported. You can use **bold**, *italic*, code blocks, and more.
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary">Post Answer</button>
+            <div class="text-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-1"></i> Post Your Answer
+                </button>
+            </div>
         </form>
     </div>
 </div>
+{% else %}
+<div class="card shadow-sm mt-4 text-center">
+    <div class="card-body py-4">
+        <i class="fas fa-lock fa-3x text-muted mb-3"></i>
+        <h5>You must be logged in to answer</h5>
+        <p class="text-muted mb-3">Please log in or register to contribute to this discussion</p>
+        <div class="d-flex justify-content-center gap-2">
+            <a href="{% url 'login' %}" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt me-1"></i> Login
+            </a>
+            <a href="{% url 'register' %}" class="btn btn-outline-primary">
+                <i class="fas fa-user-plus me-1"></i> Register
+            </a>
+        </div>
+    </div>
+</div>
 {% endif %}
+
+{% block scripts %}
+<script>
+// Enhance the answer form submission with loading state
+document.getElementById('answer-submit-form')?.addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Posting...';
+    submitBtn.disabled = true;
+    // Form will submit normally
+});
+
+// Smooth scroll to answer form when clicking the Answer button
+document.querySelectorAll('a[href="#answer-form"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        document.querySelector('#answer-form').scrollIntoView({
+            behavior: 'smooth'
+        });
+        // Focus on the textarea after scrolling
+        setTimeout(() => {
+            document.querySelector('#answer-form textarea').focus();
+        }, 500);
+    });
+});
+</script>
+{% endblock %}
 {% endblock %}

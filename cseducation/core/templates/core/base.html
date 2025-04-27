@@ -4,32 +4,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}CS Education Platform{% endblock %}</title>
+    <meta name="description" content="School Bud - A modern CS education platform for students and educators">
+    <title>{% block title %}School Bud | CS Education Platform{% endblock %}</title>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{% static 'core/css/modern-style.css' %}" rel="stylesheet">
+    {% block head %}{% endblock %}
 </head>
-<body class="{% if user.is_authenticated %}user-authenticated{% endif %}">
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">School Bud</a>
+<body class="{% if user.is_authenticated %}user-authenticated{% endif %} fade-in">
+    <div class="page-wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-dark">
+            <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}"><i class="fas fa-graduation-cap me-2"></i>School Bud</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">Home</a>
+                    <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+                        <a class="nav-link" href="{% url 'home' %}"><i class="fas fa-home me-1"></i> Home</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'course_list' %}">Courses</a>
+                    <li class="nav-item {% if '/courses/' in request.path %}active{% endif %}">
+                        <a class="nav-link" href="{% url 'course_list' %}"><i class="fas fa-book me-1"></i> Courses</a>
+                    </li>
+                    <li class="nav-item {% if '/github-projects/' in request.path %}active{% endif %}">
+                        <a class="nav-link" href="{% url 'github_projects_list' %}"><i class="fab fa-github me-1"></i> GitHub Projects</a>
                     </li>
                     {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'question_new' %}">Ask Question</a>
+                    <li class="nav-item {% if '/question/new/' in request.path %}active{% endif %}">
+                        <a class="nav-link" href="{% url 'question_new' %}"><i class="fas fa-question-circle me-1"></i> Ask Question</a>
                     </li>
+                    {% if user.is_staff %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'analytics_dashboard' %}">Analytics</a>
+                    </li>
+                    {% endif %}
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">
@@ -56,10 +75,11 @@
     </nav>
 
     <!-- Main Content -->
-    <div class="container mt-4">
+    <div class="container mt-4 mb-5">
         {% if messages %}
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm">
+            <i class="{% if message.tags == 'success' %}fas fa-check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}fas fa-exclamation-circle{% elif message.tags == 'warning' %}fas fa-exclamation-triangle{% else %}fas fa-info-circle{% endif %} me-2"></i>
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
@@ -69,6 +89,51 @@
         {% block content %}
         {% endblock %}
     </div>
+    
+    </div><!-- End of page-wrapper -->
+    
+    <!-- Footer -->
+    <footer class="footer py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-graduation-cap me-2"></i>School Bud</h5>
+                    <p class="text-muted">A modern platform for computer science education, combining Q&A functionality with GitHub integration and personalized learning.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                        <li><a href="{% url 'course_list' %}" class="text-decoration-none">Courses</a></li>
+                        <li><a href="{% url 'github_projects_list' %}" class="text-decoration-none">GitHub Projects</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Resources</h5>
+                    <ul class="list-unstyled">
+                        {% if user.is_authenticated %}
+                        <li><a href="{% url 'profile' user.username %}" class="text-decoration-none">My Profile</a></li>
+                        {% if user.is_staff %}
+                        <li><a href="{% url 'analytics_dashboard' %}" class="text-decoration-none">Analytics Dashboard</a></li>
+                        {% endif %}
+                        {% else %}
+                        <li><a href="{% url 'login' %}" class="text-decoration-none">Login</a></li>
+                        <li><a href="{% url 'register' %}" class="text-decoration-none">Register</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between align-items-center">
+                <p class="mb-0 text-muted">© {% now "Y" %} School Bud. All rights reserved.</p>
+                <div>
+                    <a href="#" class="text-decoration-none me-3"><i class="fab fa-github"></i></a>
+                    <a href="#" class="text-decoration-none me-3"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-decoration-none"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <!-- CSRF Token for AJAX requests -->
     <form id="csrf-form" style="display:none;">
@@ -77,6 +142,33 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Core JS -->
     <script src="{% static 'core/js/voting.js' %}"></script>
+    <script src="{% static 'js/question-content.js' %}"></script>
+    
+    <script>
+    // Add active class to current nav item
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+        
+        // Add smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                
+                document.querySelector(targetId).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    });
+    </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>
