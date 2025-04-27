@@ -16,7 +16,7 @@ A comprehensive web-based platform for computer science education that combines 
 - **Backend**: Django, Django REST Framework, PostgreSQL
 - **Frontend**: React, Bootstrap, Webpack
 - **Authentication**: Django Social Auth (GitHub OAuth)
-- **Analytics**: Custom event tracking with Supabase integration
+- **Analytics**: Custom event tracking
 
 ## Prerequisites
 
@@ -98,8 +98,6 @@ For production or to use GitHub integration, you'll need to set up the following
 - `DATABASE_URL`: PostgreSQL connection string (optional, can use settings.py)
 - `GITHUB_KEY`: GitHub OAuth App Client ID
 - `GITHUB_SECRET`: GitHub OAuth App Client Secret
-- `SUPABASE_URL`: Supabase project URL (for analytics)
-- `SUPABASE_KEY`: Supabase API key
 
 ## Admin Access
 
